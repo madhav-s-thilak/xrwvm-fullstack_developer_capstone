@@ -41,9 +41,6 @@ const reviews = new Schema({
     type: Number,
     required: true
   },
-  {
-    "esversion": 6
-  },
 });
 
 module.exports = mongoose.model('reviews', reviews);
