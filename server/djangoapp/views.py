@@ -1,10 +1,6 @@
-# Uncomment the required imports before adding the code
-
-import requests  # ADD THIS LINE at the top with other imports
-from django.shortcuts import render
+import requests  
 from django.contrib.auth.models import User
 from django.contrib.auth import logout
-from django.contrib import messages
 from .models import CarMake, CarModel
 from .populate import initiate
 from django.http import JsonResponse
@@ -65,8 +61,6 @@ def logout_request(request):
 
 @csrf_exempt
 def registration(request):
-    context = {}
-
     # Load JSON data from the request body
     data = json.loads(request.body)
     username = data['userName']
@@ -75,7 +69,6 @@ def registration(request):
     last_name = data['lastName']
     email = data['email']
     username_exist = False
-    email_exist = False
     try:
         # Check if user already exists
         User.objects.get(username=username)
@@ -114,23 +107,6 @@ def get_dealerships(request, state="All"):
         endpoint = "/fetchDealers/" + state
     dealerships = get_request(endpoint)
     return JsonResponse({"status": 200, "dealers": dealerships})
-
-# Create a `get_dealer_reviews` view to render the reviews of a dealer
-# def get_dealer_reviews(request,dealer_id):
-# ...
-# def get_dealer_reviews(request, dealer_id):
-#     # if dealer id has been provided
-#     if(dealer_id):
-#         endpoint = "/fetchReviews/dealer/"+str(dealer_id)
-#         reviews = get_request(endpoint)
-#         for review_detail in reviews:
-#             response = analyze_review_sentiments(review_detail['review'])
-#             print(response)
-#             review_detail['sentiment'] = response['sentiment']
-#         return JsonResponse({"status":200,"reviews":reviews})
-#     else:
-#         return JsonResponse({"status":400,"message":"Bad Request"})
-
 
 def get_dealer_reviews(request, dealer_id):
     """
@@ -203,7 +179,7 @@ def get_dealer_details(request, dealer_id):
 
 
 def add_review(request):
-    if (request.user.is_anonymous == False):
+    if (is not request.user.is_anonymous):
         data = json.loads(request.body)
         try:
             response = post_review(data)

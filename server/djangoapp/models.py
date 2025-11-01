@@ -1,7 +1,5 @@
 from django.db import models
-from django.utils.timezone import now
 from django.core.validators import MaxValueValidator, MinValueValidator
-# Create your models here.
 
 
 class CarMake(models.Model):
@@ -49,7 +47,8 @@ class CarModel(models.Model):
         ]
     )
     features = models.TextField(blank=True, null=True)
-    price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    price = models.DecimalField(max_digits=10, decimal_places=2,
+                                default=0)
 
     class Meta:
         verbose_name_plural = "Car Models"
