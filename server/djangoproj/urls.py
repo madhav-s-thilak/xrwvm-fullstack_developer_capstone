@@ -16,19 +16,19 @@ Including another URLconf
 INDEX_VIEW = TemplateView.as_view(template_name="index.html")
 from django.contrib import admin
 from django.urls import path, include
-from django.views.generic import TemplateView
+from django. views.generic import TemplateView
 from django.conf.urls.static import static
 from django.conf import settings
 
 urlpatterns = [
     path('about/', TemplateView.as_view(template_name="About.html")),
-    path('login/', TemplateView.as_view(template_name="index.html")),
+    path('login/', INDEX_VIEW),
     path('contact/', TemplateView.as_view(template_name="Contact.html")),
     path('admin/', admin.site.urls),
     path('djangoapp/', include('djangoapp.urls')),
-    path('register/', TemplateView.as_view(template_name="index.html")),
+    path('register/', INDEX_VIEW),
     path('', TemplateView.as_view(template_name="Home.html")),
-    path('dealers/', TemplateView.as_view(template_name="index.html")),
+    path('dealers/', INDEX_VIEW),
     path('dealer/<int:dealer_id>', INDEX_VIEW),
     path('postreview/<int:dealer_id>', INDEX_VIEW),
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
