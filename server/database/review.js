@@ -11,6 +11,7 @@ const reviews = new Schema({
     type: String,
     required: true
   },
+	
   dealership: {
     type: Number,
     required: true,
@@ -38,6 +39,9 @@ const reviews = new Schema({
   car_year: {
     type: Number,
     required: true
+  },
+  {
+    "esversion": 6
   },
 });
 
