@@ -106,18 +106,72 @@ def get_dealerships(request, state="All"):
 # Create a `get_dealer_reviews` view to render the reviews of a dealer
 # def get_dealer_reviews(request,dealer_id):
 # ...
+# def get_dealer_reviews(request, dealer_id):
+#     # if dealer id has been provided
+#     if(dealer_id):
+#         endpoint = "/fetchReviews/dealer/"+str(dealer_id)
+#         reviews = get_request(endpoint)
+#         for review_detail in reviews:
+#             response = analyze_review_sentiments(review_detail['review'])
+#             print(response)
+#             review_detail['sentiment'] = response['sentiment']
+#         return JsonResponse({"status":200,"reviews":reviews})
+#     else:
+#         return JsonResponse({"status":400,"message":"Bad Request"})
 def get_dealer_reviews(request, dealer_id):
-    # if dealer id has been provided
-    if(dealer_id):
-        endpoint = "/fetchReviews/dealer/"+str(dealer_id)
-        reviews = get_request(endpoint)
-        for review_detail in reviews:
-            response = analyze_review_sentiments(review_detail['review'])
-            print(response)
-            review_detail['sentiment'] = response['sentiment']
-        return JsonResponse({"status":200,"reviews":reviews})
-    else:
-        return JsonResponse({"status":400,"message":"Bad Request"})
+    """
+    Retrieve reviews for a specific dealer from MongoDB
+    """
+    try:
+        # Fetch reviews from MongoDB API
+        reviews_url = f"http://localhost:3030/fetchReviews/dealer/{dealer_id}"
+        response = requests.get(reviews_url, timeout=5)
+        
+        if response.status_code != 200:
+            return JsonResponse({"error": "Failed to fetch reviews"}, status=500)
+        
+        reviews_data = response.json()
+        reviews = []
+        
+        for review in reviews_data:
+            # Safely get sentiment from sentiment analyzer
+            try:
+                sentiment_response = requests.get(
+                    f"http://sentiment-analyzer:8080/analyze/{review['review']}",
+                    timeout=5
+                )
+                
+                # Check if response is valid
+                if sentiment_response.status_code == 200 and sentiment_response.text:
+                    sentiment_data = sentiment_response.json()
+                    sentiment = sentiment_data.get('sentiment', 'NEUTRAL')
+                else:
+                    sentiment = 'NEUTRAL'  # Default sentiment if analysis fails
+                    
+            except (requests.RequestException, ValueError):
+                # If sentiment analyzer fails, use default
+                sentiment = 'NEUTRAL'
+            
+            review_detail = {
+                "id": review.get('id'),
+                "name": review.get('name'),
+                "dealership": review.get('dealership'),
+                "review": review.get('review'),
+                "purchase": review.get('purchase'),
+                "purchase_date": review.get('purchase_date'),
+                "car_make": review.get('car_make'),
+                "car_model": review.get('car_model'),
+                "car_year": review.get('car_year'),
+                "sentiment": sentiment
+            }
+            reviews.append(review_detail)
+        
+        return JsonResponse(reviews, safe=False)
+        
+    except Exception as e:
+        print(f"Error fetching reviews: {str(e)}")
+        return JsonResponse({"error": "Internal server error"}, status=500)
+
 
 # Create a `get_dealer_details` view to render the dealer details
 # def get_dealer_details(request, dealer_id):
