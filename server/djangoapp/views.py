@@ -124,8 +124,9 @@ def get_dealer_reviews(request, dealer_id):
                     timeout=5)
 
                 # Check if response is valid
-                if (sentiment_response.status_code == 200 and
-                        sentiment_response.text):
+                if (sentiment_response.status_code == 200
+                        and sentiment_response.text):
+
                     sentiment_data = sentiment_response.json()
                     sentiment = sentiment_data.get('sentiment', 'NEUTRAL')
                 else:
