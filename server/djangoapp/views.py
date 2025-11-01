@@ -1,20 +1,19 @@
-import requests  
-from django.contrib.auth.models import User
-from django.contrib.auth import logout
-from .models import CarMake, CarModel
-from .populate import initiate
-from django.http import JsonResponse
-from django.contrib.auth import login, authenticate
+import requests
 import logging
 import json
+from django.contrib.auth.models import User
+from django.contrib.auth import logout, login, authenticate
+from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from .restapis import get_request, analyze_review_sentiments, post_review
+from .models import CarMake, CarModel
+from .populate import initiate
+from .restapis import get_request, post_review
+
 
 # Get an instance of a logger
 logger = logging.getLogger(__name__)
 
 
-# Create your views here.
 def get_cars(request):
     count = CarMake.objects.filter().count()
     print(count)
@@ -30,7 +29,6 @@ def get_cars(request):
         })
 
     return JsonResponse({"CarModels": cars})
-# Create a `login_request` view to handle sign in request
 
 
 @csrf_exempt
@@ -41,22 +39,18 @@ def login_user(request):
     password = data['password']
     # Try to check if provide credential can be authenticated
     user = authenticate(username=username, password=password)
-    data = {"userName": username}
+    response_data = {"userName": username}
     if user is not None:
         # If user is valid, call login method to login current user
         login(request, user)
-        data = {"userName": username, "status": "Authenticated"}
-    return JsonResponse(data)
-
-# Create a `logout_request` view to handle sign out request
+        response_data = {"userName": username, "status": "Authenticated"}
+    return JsonResponse(response_data)
 
 
 def logout_request(request):
     logout(request)  # Terminate user session
-    data = {"userName": ""}  # Return empty username
-    return JsonResponse(data)
-
-# Create a `registration` view to handle sign up request
+    response_data = {"userName": ""}  # Return empty username
+    return JsonResponse(response_data)
 
 
 @csrf_exempt
@@ -73,9 +67,9 @@ def registration(request):
         # Check if user already exists
         User.objects.get(username=username)
         username_exist = True
-    except BaseException:
+    except Exception:
         # If not, simply log this is a new user
-        logger.debug("{} is new user".format(username))
+        logger.debug(f"{username} is new user")
 
     # If it is a new user
     if not username_exist:
@@ -88,25 +82,21 @@ def registration(request):
             email=email)
         # Login the user and redirect to list page
         login(request, user)
-        data = {"userName": username, "status": "Authenticated"}
-        return JsonResponse(data)
+        response_data = {"userName": username, "status": "Authenticated"}
+        return JsonResponse(response_data)
     else:
-        data = {"userName": username, "error": "Already Registered"}
-        return JsonResponse(data)
-
-# # Update the `get_dealerships` view to render the index page with
-# a list of dealerships
-# Update the `get_dealerships` render list of dealerships all by default,
-# particular state if state is passed
+        response_data = {"userName": username, "error": "Already Registered"}
+        return JsonResponse(response_data)
 
 
 def get_dealerships(request, state="All"):
-    if (state == "All"):
+    if state == "All":
         endpoint = "/fetchDealers"
     else:
-        endpoint = "/fetchDealers/" + state
+        endpoint = f"/fetchDealers/{state}"
     dealerships = get_request(endpoint)
     return JsonResponse({"status": 200, "dealers": dealerships})
+
 
 def get_dealer_reviews(request, dealer_id):
     """
@@ -114,7 +104,9 @@ def get_dealer_reviews(request, dealer_id):
     """
     try:
         # Fetch reviews from MongoDB API
-        reviews_url = f"http://localhost:3030/fetchReviews/dealer/{dealer_id}"
+        reviews_url = (
+            f"http://localhost:3030/fetchReviews/dealer/{dealer_id}"
+        )
         response = requests.get(reviews_url, timeout=5)
 
         if response.status_code != 200:
@@ -128,14 +120,16 @@ def get_dealer_reviews(request, dealer_id):
             # Safely get sentiment from sentiment analyzer
             try:
                 sentiment_response = requests.get(
-                    f"http://sentiment-analyzer:8080/analyze/{review['review']}", timeout=5)
+                    f"http://sentiment-analyzer:8080/analyze/{review['review']}",
+                    timeout=5)
 
                 # Check if response is valid
-                if sentiment_response.status_code == 200 and sentiment_response.text:
+                if (sentiment_response.status_code == 200 and
+                        sentiment_response.text):
                     sentiment_data = sentiment_response.json()
                     sentiment = sentiment_data.get('sentiment', 'NEUTRAL')
                 else:
-                    sentiment = 'NEUTRAL'  # Default sentiment if analysis fails
+                    sentiment = 'NEUTRAL'  # Default sentiment if fails
 
             except (requests.RequestException, ValueError):
                 # If sentiment analyzer fails, use default
@@ -159,19 +153,18 @@ def get_dealer_reviews(request, dealer_id):
 
     except Exception as e:
         print(f"Error fetching reviews: {str(e)}")
-        return JsonResponse({"error": "Internal server error"}, status=500)
+        return JsonResponse(
+            {"error": "Internal server error"}, status=500)
 
 
-# Create a `get_dealer_details` view to render the dealer details
-# def get_dealer_details(request, dealer_id):
-# ...
 def get_dealer_details(request, dealer_id):
-    if (dealer_id):
-        endpoint = "/fetchDealer/" + str(dealer_id)
+    if dealer_id:
+        endpoint = f"/fetchDealer/{str(dealer_id)}"
         dealership = get_request(endpoint)
         return JsonResponse({"status": 200, "dealer": dealership})
     else:
         return JsonResponse({"status": 400, "message": "Bad Request"})
+
 
 def add_review(request):
     """Add a new review for a dealer"""
